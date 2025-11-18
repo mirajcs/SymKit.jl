@@ -1,7 +1,7 @@
 # Evaluate expressions by substituting variable values
 
 """
-    evaluate(expr::SymExpr, var::Sym, value::Number)
+    Evaluate(expr::SymExpr, var::Sym, value::Number)
 
 Substitute a variable with a numeric value in an expression.
 Returns the result as a SymExpr (which may be a Const if fully evaluated).
@@ -9,7 +9,7 @@ Returns the result as a SymExpr (which may be a Const if fully evaluated).
 Example:
     x = Sym(:x)
     expr = x^2 + 3*x + 2
-    result = evaluate(expr, x, 2)  # Returns Const(12)
+    result = Evaluate(expr, x, 2)  # Returns Const(12)
 """
 function Evaluate(expr::SymExpr, var::Sym, value::Number)
     if expr isa Sym
@@ -29,7 +29,7 @@ function Evaluate(expr::SymExpr, var::Sym, value::Number)
 end
 
 """
-    has_variable(expr::SymExpr, var::Sym)
+    hasVariable(expr::SymExpr, var::Sym)
 
 Check if an expression contains a specific variable.
 
@@ -37,9 +37,9 @@ Example:
     x = Sym(:x)
     y = Sym(:y)
     expr = x^2 + 3*y
-    has_variable(expr, x)  # Returns true
-    has_variable(expr, y)  # Returns true
-    has_variable(expr, Sym(:z))  # Returns false
+    hasVariable(expr, x)  # Returns true
+    hasVariable(expr, y)  # Returns true
+    hasVariable(expr, Sym(:z))  # Returns false
 """
 function hasVariable(expr::SymExpr, var::Sym)
     if expr isa Sym
@@ -56,7 +56,7 @@ function hasVariable(expr::SymExpr, var::Sym)
 end
 
 """
-    get_denominator(expr::SymExpr)
+    Denominator(expr::SymExpr)
 
 Extract the denominator from a division expression.
 If expr is not a division, returns nothing.
@@ -64,7 +64,7 @@ If expr is not a division, returns nothing.
 Example:
     x = Sym(:x)
     expr = (x+1) / (x-1)
-    denom = get_denominator(expr)  # Returns BinaryOp(:-, Sym(:x), Const(1))
+    denom = Denominator(expr)  # Returns BinaryOp(:-, Sym(:x), Const(1))
 """
 function Denominator(expr::SymExpr)
     if expr isa BinaryOp && expr.op == :/
@@ -75,7 +75,7 @@ function Denominator(expr::SymExpr)
 end
 
 """
-    find_singularities(expr::SymExpr, _var::Sym)
+    Singularities(expr::SymExpr, _var::Sym)
 
 Find potential singularities (points where denominator = 0) in an expression.
 For polynomial denominators, tries to find roots.
@@ -86,7 +86,7 @@ For complex expressions, may return an empty vector or approximate solutions.
 Example:
     x = Sym(:x)
     expr = 1 / (x - 2)
-    singularities = find_singularities(expr, x)  # Returns [2] or similar
+    singularities = Singularities(expr, x)  # Returns [2] or similar
 """
 function Singularities(expr::SymExpr, _var::Sym)
     singularities = []
