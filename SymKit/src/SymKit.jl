@@ -2,8 +2,8 @@ module SymKit
 
 
 export Sym, @sym, Const, UnaryOp, BinaryOp, promote_expr, Simplify, Derivative,
-       evaluate, has_variable, get_denominator, find_singularities,
-       limit, check_division_limits, describe_division_behavior
+       Evaluate, hasVariable, Denominator, Singularities,
+       Limit, CheckDivisionLimits, DivisionBehavior
 
 #Other modules
 include("types.jl")

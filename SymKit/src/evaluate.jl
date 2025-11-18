@@ -11,17 +11,17 @@ Example:
     expr = x^2 + 3*x + 2
     result = evaluate(expr, x, 2)  # Returns Const(12)
 """
-function evaluate(expr::SymExpr, var::Sym, value::Number)
+function Evaluate(expr::SymExpr, var::Sym, value::Number)
     if expr isa Sym
         return expr.name == var.name ? Const(value) : expr
     elseif expr isa Const
         return expr
     elseif expr isa UnaryOp
-        arg_eval = evaluate(expr.arg, var, value)
+        arg_eval = Evaluate(expr.arg, var, value)
         return simplify_once(UnaryOp(expr.op, arg_eval))
     elseif expr isa BinaryOp
-        left_eval = evaluate(expr.left, var, value)
-        right_eval = evaluate(expr.right, var, value)
+        left_eval = Evaluate(expr.left, var, value)
+        right_eval = Evaluate(expr.right, var, value)
         return simplify_once(BinaryOp(expr.op, left_eval, right_eval))
     else
         return expr
@@ -41,15 +41,15 @@ Example:
     has_variable(expr, y)  # Returns true
     has_variable(expr, Sym(:z))  # Returns false
 """
-function has_variable(expr::SymExpr, var::Sym)
+function hasVariable(expr::SymExpr, var::Sym)
     if expr isa Sym
         return expr.name == var.name
     elseif expr isa Const
         return false
     elseif expr isa UnaryOp
-        return has_variable(expr.arg, var)
+        return hasVariable(expr.arg, var)
     elseif expr isa BinaryOp
-        return has_variable(expr.left, var) || has_variable(expr.right, var)
+        return hasVariable(expr.left, var) || hasVariable(expr.right, var)
     else
         return false
     end
@@ -66,7 +66,7 @@ Example:
     expr = (x+1) / (x-1)
     denom = get_denominator(expr)  # Returns BinaryOp(:-, Sym(:x), Const(1))
 """
-function get_denominator(expr::SymExpr)
+function Denominator(expr::SymExpr)
     if expr isa BinaryOp && expr.op == :/
         return expr.right
     else
@@ -88,7 +88,7 @@ Example:
     expr = 1 / (x - 2)
     singularities = find_singularities(expr, x)  # Returns [2] or similar
 """
-function find_singularities(expr::SymExpr, _var::Sym)
+function Singularities(expr::SymExpr, _var::Sym)
     singularities = []
 
     # Recursively search for division operations

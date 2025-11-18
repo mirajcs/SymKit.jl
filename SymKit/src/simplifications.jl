@@ -73,6 +73,10 @@ function simplify_binary(expr::BinaryOp)
         elseif expr.op == :*
             return Const(left.value * right.value)
         elseif expr.op == :/
+            # Check for division by zero
+            if right.value == 0
+                throw(ErrorException("Division by zero"))
+            end
             return Const(left.value / right.value)
         elseif expr.op == :^
             return Const(left.value ^ right.value)

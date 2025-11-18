@@ -1,7 +1,7 @@
 # Limit calculation and left/right-handed limit checking
 
 """
-    limit(expr::SymExpr, var::Sym, point::Number; direction=:both, epsilon=1e-6)
+    Limit(expr::SymExpr, var::Sym, point::Number; direction=:both, epsilon=1e-6)
 
 Calculate the limit of an expression as a variable approaches a point.
 
@@ -22,10 +22,10 @@ Example:
     limit(expr, x, 0; direction=:left)   # Approaches -∞
     limit(expr, x, 0; direction=:right)  # Approaches +∞
 """
-function limit(expr::SymExpr, var::Sym, point::Number; direction=:both, epsilon=1e-6)
+function Limit(expr::SymExpr, var::Sym, point::Number; direction=:both, epsilon=1e-6)
     if direction == :both
-        return (limit(expr, var, point; direction=:left, epsilon=epsilon),
-                limit(expr, var, point; direction=:right, epsilon=epsilon))
+        return (Limit(expr, var, point; direction=:left, epsilon=epsilon),
+                Limit(expr, var, point; direction=:right, epsilon=epsilon))
     end
 
     # Determine the direction of approach
@@ -41,7 +41,7 @@ function limit(expr::SymExpr, var::Sym, point::Number; direction=:both, epsilon=
         test_point = point + step / (2^i)
 
         try
-            result = evaluate(expr, var, test_point)
+            result = Evaluate(expr, var, test_point)
             if result isa Const
                 push!(results, result.value)
             else
@@ -80,15 +80,15 @@ function limit(expr::SymExpr, var::Sym, point::Number; direction=:both, epsilon=
 end
 
 """
-    check_division_limits(expr::SymExpr, var::Sym)
+    CheckDivisionLimits(expr::SymExpr, var::Sym)
 
 Check for division by zero and compute left/right-handed limits at singularities.
 
 Returns a dictionary with:
-- :has_singularity::Bool - whether division by zero exists
-- :singularities::Vector - list of singularity information
-- :left_limit - left-handed limit at each singularity
-- :right_limit - right-handed limit at each singularity
+- :Singularity::Bool - whether division by zero exists
+- :Singularities::Vector - list of singularity information
+- :LeftLimit - left-handed limit at each singularity
+- :RightLimit - right-handed limit at each singularity
 
 Example:
     x = Sym(:x)
@@ -96,8 +96,8 @@ Example:
     result = check_division_limits(expr, x)
     # Returns info about singularity at x=2
 """
-function check_division_limits(expr::SymExpr, var::Sym; epsilon=1e-6)
-    singularities = find_singularities(expr, var)
+function CheckDivisionLimits(expr::SymExpr, var::Sym; epsilon=1e-6)
+    singularities = Singularities(expr, var)
     result = Dict(
         :has_singularity => false,
         :singularities => [],
@@ -112,14 +112,14 @@ function check_division_limits(expr::SymExpr, var::Sym; epsilon=1e-6)
         test_points = -10:1:10
         for test_point in test_points
             try
-                denom_val = evaluate(denom, var, test_point)
+                denom_val = Evaluate(denom, var, test_point)
                 if denom_val isa Const && abs(denom_val.value) < 1e-10
                     # Found a potential singularity
                     result[:has_singularity] = true
 
                     # Compute left and right limits
-                    left_lim = limit(expr, var, test_point; direction=:left, epsilon=epsilon)
-                    right_lim = limit(expr, var, test_point; direction=:right, epsilon=epsilon)
+                    left_lim = Limit(expr, var, test_point; direction=:left, epsilon=epsilon)
+                    right_lim = Limit(expr, var, test_point; direction=:right, epsilon=epsilon)
 
                     push!(result[:singularities], Dict(
                         :point => test_point,
@@ -139,7 +139,7 @@ function check_division_limits(expr::SymExpr, var::Sym; epsilon=1e-6)
 end
 
 """
-    describe_division_behavior(expr::SymExpr, var::Sym)
+    DivisionBehavior(expr::SymExpr, var::Sym)
 
 Provide a human-readable description of division behavior at singularities.
 
@@ -151,8 +151,8 @@ Example:
     describe_division_behavior(expr, x)
     # Returns: "Division by zero at x=2. Left limit: -∞, Right limit: +∞"
 """
-function describe_division_behavior(expr::SymExpr, var::Sym)
-    analysis = check_division_limits(expr, var)
+function DivisionBehavior(expr::SymExpr, var::Sym)
+    analysis = CheckDivisionLimits(expr, var)
 
     if !analysis[:has_singularity]
         return "No division by zero detected"
@@ -180,11 +180,7 @@ function describe_division_behavior(expr::SymExpr, var::Sym)
     return join(descriptions, "\n")
 end
 
-"""
-    format_limit_value(val)
 
-Format a limit value for display.
-"""
 function format_limit_value(val)
     if val == :inf
         return "+∞"

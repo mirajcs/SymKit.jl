@@ -254,31 +254,31 @@ end
     @sym x y
 
     # Test basic evaluation
-    @test evaluate(x, x, 5) == Const(5)
-    @test evaluate(Const(3), x, 5) == Const(3)
+    @test Evaluate(x, x, 5) == Const(5)
+    @test Evaluate(Const(3), x, 5) == Const(3)
 
     # Test evaluation with expressions
     expr = x + Const(2)
-    result = evaluate(expr, x, 3)
+    result = Evaluate(expr, x, 3)
     @test result == Const(5)
 
     # Test evaluation with polynomial
     expr = x^2 + 3*x + 2
-    result = evaluate(expr, x, 2)
+    result = Evaluate(expr, x, 2)
     @test result == Const(12)  # 4 + 6 + 2
 
     # Test has_variable
-    @test has_variable(x, x) == true
-    @test has_variable(y, x) == false
-    @test has_variable(x + y, x) == true
-    @test has_variable(Const(5), x) == false
+    @test hasVariable(x, x) == true
+    @test hasVariable(y, x) == false
+    @test hasVariable(x + y, x) == true
+    @test hasVariable(Const(5), x) == false
 
     # Test get_denominator
     expr = 1 / x
-    @test get_denominator(expr) == x
+    @test Denominator(expr) == x
 
     expr = (x + 1) / (x - 1)
-    denom = get_denominator(expr)
+    denom = Denominator(expr)
     @test denom.op == :-
     @test denom.left == x
     @test denom.right == Const(1)
@@ -288,41 +288,41 @@ end
 
     # Test limit function with simple expression
     expr = 1 / x
-    left_lim = limit(expr, x, 0; direction=:left)
-    right_lim = limit(expr, x, 0; direction=:right)
+    left_lim = Limit(expr, x, 0; direction=:left)
+    right_lim = Limit(expr, x, 0; direction=:right)
 
     # Left limit should be negative infinity, right limit positive infinity
     @test left_lim == Symbol("-inf")
     @test right_lim == :inf
 
     # Test both direction limit
-    both_lims = limit(expr, x, 0; direction=:both)
+    both_lims = Limit(expr, x, 0; direction=:both)
     @test both_lims == (Symbol("-inf"), :inf)
 
     # Test check_division_limits
-    analysis = check_division_limits(expr, x)
+    analysis = CheckDivisionLimits(expr, x)
     @test analysis[:has_singularity] == true
     @test length(analysis[:singularities]) > 0
 
     # Test describe_division_behavior
-    desc = describe_division_behavior(expr, x)
+    desc = DivisionBehavior(expr, x)
     @test typeof(desc) == String
     @test contains(desc, "Discontinuous") || contains(desc, "x=0")
 
     # Test with removable singularity: (x-1)/(x-1) = 1
     expr = (x - 1) / (x - 1)
-    analysis = check_division_limits(expr, x)
+    analysis = CheckDivisionLimits(expr, x)
     # This should still report singularity since denominator is 0 at x=1
     @test analysis[:has_singularity] == true
 
     # Test find_singularities
     expr = 1 / (x - 2)
-    sings = find_singularities(expr, x)
+    sings = Singularities(expr, x)
     @test length(sings) > 0  # Should find the division
 
     # Test with complex expression
     expr = (x + 1) / (x^2 - 1)
-    sings = find_singularities(expr, x)
+    sings = Singularities(expr, x)
     @test length(sings) > 0
 
 end
