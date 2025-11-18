@@ -75,8 +75,21 @@ function Base.show(io::IO, b::BinaryOp)
             print(io, b.left, "^(", b.right, ")")
         end
     elseif b.op == :*
-        # Compact multiplication: 2x instead of (2 * x)
-        print(io, "(", b.left, " * ", b.right, ")")
+        # Compact multiplication: 4x, xy instead of (4 * x), (x * y)
+        left_str = string(b.left)
+        right_str = string(b.right)
+
+        # Check if left is a number (Const)
+        if b.left isa Const
+            # Number followed by variable/expression: 4x, 4xy
+            print(io, left_str, right_str)
+        elseif b.right isa Const
+            # Variable/expression followed by number: x4 (less common but handle it)
+            print(io, left_str, right_str)
+        else
+            # Variable/expression followed by variable/expression: xy
+            print(io, left_str, right_str)
+        end
     else
         print(io, "(", b.left, " ", b.op, " ", b.right, ")")
     end

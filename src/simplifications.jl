@@ -83,6 +83,18 @@ function simplify_binary(expr::BinaryOp)
         end
     end
 
+    # Coefficient multiplication: (a * x) * b = (a * b) * x
+    if expr.op == :* && left isa BinaryOp && left.op == :* && left.left isa Const && right isa Const
+        coeff = Const(left.left.value * right.value)
+        return simplify_once(coeff * left.right)
+    end
+
+    # Coefficient multiplication: a * (b * x) = (a * b) * x
+    if expr.op == :* && left isa Const && right isa BinaryOp && right.op == :* && right.left isa Const
+        coeff = Const(left.value * right.left.value)
+        return simplify_once(coeff * right.right)
+    end
+
     # Identity rules
     if expr.op == :+
         (left isa Const && left.value == 0) && return right
@@ -297,12 +309,16 @@ end
 simplify(x::Number) = Const(x)
 
 function Simplify(expr::SymExpr)
-    # Recursively simplify
-    expr = simplify_once(expr)
+    # Recursively simplify until reaching a fixed point
     prev = nothing
-    while prev !== expr
+    max_iterations = 100  # Prevent infinite loops
+    iterations = 0
+
+    while prev !== expr && iterations < max_iterations
         prev = expr
         expr = simplify_once(expr)
+        iterations += 1
     end
+
     expr
 end
