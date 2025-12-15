@@ -38,7 +38,11 @@ function Base.show(io::IO, u::UnaryOp)
         print(io, "√‾", arg_str, "‾")
     elseif u.op == :abs
         print(io, "|", u.arg, "|")
+    elseif u.op in [:sin, :cos, :tan, :asin, :acos, :atan, :exp, :log]
+        # Standard function notation for trigonometric and transcendental functions
+        print(io, u.op, "(", u.arg, ")")
     else
+        # Generic unary operation
         print(io, u.op, "(", u.arg, ")")
     end
 end

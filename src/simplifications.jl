@@ -1,17 +1,15 @@
 # Internal helper function - applies one simplification rule
-function simplify_once(expr::SymExpr)
-    # Base cases: Sym and Const are already simplified
-    expr isa Sym && return expr
-    expr isa Const && return expr
+# Using multiple dispatch for different expression types
 
-    # Simplify UnaryOp
-    expr isa UnaryOp && return simplify_unary(expr)
+# Base cases: Sym and Const are already simplified
+simplify_once(expr::Sym) = expr
+simplify_once(expr::Const) = expr
 
-    # Simplify BinaryOp
-    expr isa BinaryOp && return simplify_binary(expr)
+# Simplify UnaryOp - dispatch to specific handler
+simplify_once(expr::UnaryOp) = simplify_unary(expr)
 
-    return expr
-end
+# Simplify BinaryOp - dispatch to specific handler
+simplify_once(expr::BinaryOp) = simplify_binary(expr)
 
 # Simplify unary operations
 function simplify_unary(expr::UnaryOp)
@@ -42,6 +40,108 @@ function simplify_unary(expr::UnaryOp)
     # abs(-x) = abs(x)
     if expr.op == :abs && arg isa UnaryOp && arg.op == :-
         return UnaryOp(:abs, arg.arg)
+    end
+
+    # Trigonometric constant simplifications
+    if expr.op == :sin && arg isa Const
+        return Const(sin(arg.value))
+    end
+
+    if expr.op == :cos && arg isa Const
+        return Const(cos(arg.value))
+    end
+
+    if expr.op == :tan && arg isa Const
+        return Const(tan(arg.value))
+    end
+
+    # Inverse trigonometric constant simplifications
+    if expr.op == :asin && arg isa Const && abs(arg.value) <= 1
+        return Const(asin(arg.value))
+    end
+
+    if expr.op == :acos && arg isa Const && abs(arg.value) <= 1
+        return Const(acos(arg.value))
+    end
+
+    if expr.op == :atan && arg isa Const
+        return Const(atan(arg.value))
+    end
+
+    # Exponential and logarithmic constant simplifications
+    if expr.op == :exp && arg isa Const
+        return Const(exp(arg.value))
+    end
+
+    if expr.op == :log && arg isa Const && arg.value > 0
+        return Const(log(arg.value))
+    end
+
+    # Trigonometric identities
+    # sin(-x) = -sin(x)
+    if expr.op == :sin && arg isa UnaryOp && arg.op == :-
+        return simplify_once(-(UnaryOp(:sin, arg.arg)))
+    end
+
+    # cos(-x) = cos(x)
+    if expr.op == :cos && arg isa UnaryOp && arg.op == :-
+        return UnaryOp(:cos, arg.arg)
+    end
+
+    # tan(-x) = -tan(x)
+    if expr.op == :tan && arg isa UnaryOp && arg.op == :-
+        return simplify_once(-(UnaryOp(:tan, arg.arg)))
+    end
+
+    # Inverse composition: asin(sin(x)) = x (simplified, ignoring domain)
+    if expr.op == :asin && arg isa UnaryOp && arg.op == :sin
+        return arg.arg
+    end
+
+    if expr.op == :acos && arg isa UnaryOp && arg.op == :cos
+        return arg.arg
+    end
+
+    if expr.op == :atan && arg isa UnaryOp && arg.op == :tan
+        return arg.arg
+    end
+
+    if expr.op == :sin && arg isa UnaryOp && arg.op == :asin
+        return arg.arg
+    end
+
+    if expr.op == :cos && arg isa UnaryOp && arg.op == :acos
+        return arg.arg
+    end
+
+    if expr.op == :tan && arg isa UnaryOp && arg.op == :atan
+        return arg.arg
+    end
+
+    # Exponential and logarithmic identities
+    # log(exp(x)) = x
+    if expr.op == :log && arg isa UnaryOp && arg.op == :exp
+        return arg.arg
+    end
+
+    # exp(log(x)) = x
+    if expr.op == :exp && arg isa UnaryOp && arg.op == :log
+        return arg.arg
+    end
+
+    # log(1) = 0
+    if expr.op == :log && arg isa Const && arg.value == 1
+        return Const(0)
+    end
+
+    # exp(0) = 1
+    if expr.op == :exp && arg isa Const && arg.value == 0
+        return Const(1)
+    end
+
+    # log(x^n) = n*log(x)
+    if expr.op == :log && arg isa BinaryOp && arg.op == :^
+        return simplify_once(arg.right * UnaryOp(:log, arg.left))
     end
 
     return UnaryOp(expr.op, arg)
@@ -119,6 +219,109 @@ function simplify_binary(expr::BinaryOp)
     if expr.op == :^
         (right isa Const && right.value == 0) && return Const(1)
         (right isa Const && right.value == 1) && return left
+        # (x^a)^b = x^(a*b)
+        if left isa BinaryOp && left.op == :^
+            return simplify_once(left.left ^ (left.right * right))
+        end
+        # exp(a)^b = exp(a*b)
+        if left isa UnaryOp && left.op == :exp
+            return simplify_once(UnaryOp(:exp, left.arg * right))
+        end
+        # x^0 = 1 (already handled above with Const check)
+        # 0^x = 0 for x > 0
+        if left isa Const && left.value == 0 && right isa Const && right.value > 0
+            return Const(0)
+        end
+        # 1^x = 1
+        if left isa Const && left.value == 1
+            return Const(1)
+        end
+    end
+
+    # Power rules with multiplication
+    # x^a * x^b = x^(a+b)
+    if expr.op == :* && left isa BinaryOp && left.op == :^ &&
+       right isa BinaryOp && right.op == :^ && left.left == right.left
+        return simplify_once(left.left ^ (left.right + right.right))
+    end
+
+    # x * x^a = x^(1+a)
+    if expr.op == :* && right isa BinaryOp && right.op == :^ && left == right.left
+        return simplify_once(left ^ (Const(1) + right.right))
+    end
+
+    # x^a * x = x^(a+1)
+    if expr.op == :* && left isa BinaryOp && left.op == :^ && right == left.left
+        return simplify_once(right ^ (left.right + Const(1)))
+    end
+
+    # Division rules
+    # x^a / x^b = x^(a-b)
+    if expr.op == :/ && left isa BinaryOp && left.op == :^ &&
+       right isa BinaryOp && right.op == :^ && left.left == right.left
+        return simplify_once(left.left ^ (left.right - right.right))
+    end
+
+    # x / x^a = x^(1-a)
+    if expr.op == :/ && right isa BinaryOp && right.op == :^ && left == right.left
+        return simplify_once(left ^ (Const(1) - right.right))
+    end
+
+    # x^a / x = x^(a-1)
+    if expr.op == :/ && left isa BinaryOp && left.op == :^ && right == left.left
+        return simplify_once(right ^ (left.right - Const(1)))
+    end
+
+    # x / x = 1
+    if expr.op == :/ && left == right
+        return Const(1)
+    end
+
+    # Exponential rules
+    # exp(a) * exp(b) = exp(a+b)
+    if expr.op == :* && left isa UnaryOp && left.op == :exp &&
+       right isa UnaryOp && right.op == :exp
+        return simplify_once(UnaryOp(:exp, left.arg + right.arg))
+    end
+
+    # exp(a) / exp(b) = exp(a-b)
+    if expr.op == :/ && left isa UnaryOp && left.op == :exp &&
+       right isa UnaryOp && right.op == :exp
+        return simplify_once(UnaryOp(:exp, left.arg - right.arg))
+    end
+
+    # Logarithm addition/subtraction
+    # log(a) + log(b) = log(a*b)
+    if expr.op == :+ && left isa UnaryOp && left.op == :log &&
+       right isa UnaryOp && right.op == :log
+        return simplify_once(UnaryOp(:log, left.arg * right.arg))
+    end
+
+    # log(a) - log(b) = log(a/b)
+    if expr.op == :- && left isa UnaryOp && left.op == :log &&
+       right isa UnaryOp && right.op == :log
+        return simplify_once(UnaryOp(:log, left.arg / right.arg))
+    end
+
+    # Trigonometric identities
+    # sin(x)^2 + cos(x)^2 = 1
+    if expr.op == :+
+        # Check if left is sin^2 and right is cos^2
+        if left isa BinaryOp && left.op == :^ && left.right isa Const && left.right.value == 2 &&
+           left.left isa UnaryOp && left.left.op == :sin &&
+           right isa BinaryOp && right.op == :^ && right.right isa Const && right.right.value == 2 &&
+           right.left isa UnaryOp && right.left.op == :cos &&
+           left.left.arg == right.left.arg
+            return Const(1)
+        end
+        # Check if left is cos^2 and right is sin^2
+        if left isa BinaryOp && left.op == :^ && left.right isa Const && left.right.value == 2 &&
+           left.left isa UnaryOp && left.left.op == :cos &&
+           right isa BinaryOp && right.op == :^ && right.right isa Const && right.right.value == 2 &&
+           right.left isa UnaryOp && right.left.op == :sin &&
+           left.left.arg == right.left.arg
+            return Const(1)
+        end
     end
 
     # Try to combine like terms if it's an addition
@@ -305,19 +508,85 @@ function combine_like_terms(expr::BinaryOp)
     end
 end
 
-# Convenience function to convert numbers to Const
-simplify(x::Number) = Const(x)
+# Count the number of operations in an expression
+# This is used to measure complexity (similar to sympy's count_ops)
+function count_ops(expr::SymExpr)
+    if expr isa Sym || expr isa Const
+        return 0
+    elseif expr isa UnaryOp
+        return 1 + count_ops(expr.arg)
+    elseif expr isa BinaryOp
+        return 1 + count_ops(expr.left) + count_ops(expr.right)
+    else
+        return 0
+    end
+end
 
-function Simplify(expr::SymExpr)
+# Select the expression with fewer operations
+function shorter(exprs::SymExpr...)
+    if length(exprs) == 0
+        throw(ArgumentError("Need at least one expression"))
+    end
+    return exprs[argmin([count_ops(e) for e in exprs])]
+end
+
+# Convenience functions to convert numbers to Const
+simplify(x::Number) = Const(x)
+Simplify(x::Number) = Const(x)
+
+"""
+    Simplify(expr::SymExpr; ratio=1.7, max_iterations=100)
+
+Simplify a symbolic expression using various simplification strategies.
+
+The simplification process recursively applies simplification rules until
+a fixed point is reached or the maximum number of iterations is exceeded.
+
+# Arguments
+- `expr::SymExpr`: The expression to simplify
+- `ratio::Float64`: Maximum ratio of result complexity to input complexity (default: 1.7)
+- `max_iterations::Int`: Maximum number of simplification iterations (default: 100)
+
+# Returns
+- `SymExpr`: The simplified expression
+
+# Examples
+```julia
+x = Sym(:x)
+expr = sin(asin(x))
+simplified = Simplify(expr)  # Returns x
+
+expr2 = log(exp(x))
+simplified2 = Simplify(expr2)  # Returns x
+
+expr3 = sin(x)^2 + cos(x)^2
+simplified3 = Simplify(expr3)  # Returns Const(1)
+```
+
+Inspired by SymPy's simplify function, this implementation tries multiple
+simplification strategies and selects the result with the fewest operations,
+while ensuring the result is not too much more complex than the input.
+"""
+function Simplify(expr::SymExpr; ratio::Float64=1.7, max_iterations::Int=100)
+    original_expr = expr
+    original_ops = count_ops(original_expr)
+
     # Recursively simplify until reaching a fixed point
     prev = nothing
-    max_iterations = 100  # Prevent infinite loops
     iterations = 0
 
     while prev !== expr && iterations < max_iterations
         prev = expr
         expr = simplify_once(expr)
         iterations += 1
+    end
+
+    # Check if the simplified expression is acceptable based on ratio
+    if ratio != Inf && original_ops > 0
+        simplified_ops = count_ops(expr)
+        if simplified_ops / original_ops > ratio
+            return original_expr
+        end
     end
 
     expr

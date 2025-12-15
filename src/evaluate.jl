@@ -11,21 +11,26 @@ Example:
     expr = x^2 + 3*x + 2
     result = Evaluate(expr, x, 2)  # Returns Const(12)
 """
-function Evaluate(expr::SymExpr, var::Sym, value::Number)
-    if expr isa Sym
-        return expr.name == var.name ? Const(value) : expr
-    elseif expr isa Const
-        return expr
-    elseif expr isa UnaryOp
-        arg_eval = Evaluate(expr.arg, var, value)
-        return simplify_once(UnaryOp(expr.op, arg_eval))
-    elseif expr isa BinaryOp
-        left_eval = Evaluate(expr.left, var, value)
-        right_eval = Evaluate(expr.right, var, value)
-        return simplify_once(BinaryOp(expr.op, left_eval, right_eval))
-    else
-        return expr
-    end
+# Multiple dispatch implementation for different expression types
+
+# Symbol: check if it matches the variable to substitute
+Evaluate(expr::Sym, var::Sym, value::Number) =
+    expr.name == var.name ? Const(value) : expr
+
+# Constant: unchanged
+Evaluate(expr::Const, var::Sym, value::Number) = expr
+
+# UnaryOp: recursively evaluate argument
+function Evaluate(expr::UnaryOp, var::Sym, value::Number)
+    arg_eval = Evaluate(expr.arg, var, value)
+    return simplify_once(UnaryOp(expr.op, arg_eval))
+end
+
+# BinaryOp: recursively evaluate both operands
+function Evaluate(expr::BinaryOp, var::Sym, value::Number)
+    left_eval = Evaluate(expr.left, var, value)
+    right_eval = Evaluate(expr.right, var, value)
+    return simplify_once(BinaryOp(expr.op, left_eval, right_eval))
 end
 
 """
@@ -41,19 +46,20 @@ Example:
     hasVariable(expr, y)  # Returns true
     hasVariable(expr, Sym(:z))  # Returns false
 """
-function hasVariable(expr::SymExpr, var::Sym)
-    if expr isa Sym
-        return expr.name == var.name
-    elseif expr isa Const
-        return false
-    elseif expr isa UnaryOp
-        return hasVariable(expr.arg, var)
-    elseif expr isa BinaryOp
-        return hasVariable(expr.left, var) || hasVariable(expr.right, var)
-    else
-        return false
-    end
-end
+# Multiple dispatch implementation for different expression types
+
+# Symbol: check if names match
+hasVariable(expr::Sym, var::Sym) = expr.name == var.name
+
+# Constant: never contains variables
+hasVariable(expr::Const, var::Sym) = false
+
+# UnaryOp: check the argument
+hasVariable(expr::UnaryOp, var::Sym) = hasVariable(expr.arg, var)
+
+# BinaryOp: check both operands
+hasVariable(expr::BinaryOp, var::Sym) =
+    hasVariable(expr.left, var) || hasVariable(expr.right, var)
 
 """
     Denominator(expr::SymExpr)

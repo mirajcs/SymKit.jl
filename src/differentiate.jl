@@ -78,15 +78,41 @@ end
 
 # UnaryOp differentiation - applies chain rule for unary operations
 function diff_impl(u::UnaryOp, var::Sym)
+    f_prime = diff_impl(u.arg, var)
+
     if u.op == :-
         # d/dx(-f) = -f'
-        -diff_impl(u.arg, var)
+        -f_prime
     elseif u.op == :sqrt
         # d/dx(√f) = f' / (2√f)
-        diff_impl(u.arg, var) / (Const(2) * UnaryOp(:sqrt, u.arg))
+        f_prime / (Const(2) * UnaryOp(:sqrt, u.arg))
     elseif u.op == :abs
         # d/dx(|f|) = f' * f / |f| = f' * sgn(f)
-        diff_impl(u.arg, var) * u.arg / UnaryOp(:abs, u.arg)
+        f_prime * u.arg / UnaryOp(:abs, u.arg)
+    elseif u.op == :sin
+        # d/dx(sin(f)) = cos(f) * f'
+        UnaryOp(:cos, u.arg) * f_prime
+    elseif u.op == :cos
+        # d/dx(cos(f)) = -sin(f) * f'
+        -UnaryOp(:sin, u.arg) * f_prime
+    elseif u.op == :tan
+        # d/dx(tan(f)) = sec²(f) * f' = f' / cos²(f)
+        f_prime / (UnaryOp(:cos, u.arg) ^ Const(2))
+    elseif u.op == :asin
+        # d/dx(asin(f)) = f' / √(1 - f²)
+        f_prime / UnaryOp(:sqrt, Const(1) - (u.arg ^ Const(2)))
+    elseif u.op == :acos
+        # d/dx(acos(f)) = -f' / √(1 - f²)
+        -f_prime / UnaryOp(:sqrt, Const(1) - (u.arg ^ Const(2)))
+    elseif u.op == :atan
+        # d/dx(atan(f)) = f' / (1 + f²)
+        f_prime / (Const(1) + (u.arg ^ Const(2)))
+    elseif u.op == :exp
+        # d/dx(exp(f)) = exp(f) * f'
+        UnaryOp(:exp, u.arg) * f_prime
+    elseif u.op == :log
+        # d/dx(log(f)) = f' / f
+        f_prime / u.arg
     else
         error("Unknown unary operator: $(u.op)")
     end
