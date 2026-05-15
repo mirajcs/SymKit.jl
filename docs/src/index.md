@@ -188,6 +188,7 @@ If you use SymKit.jl in your work, please cite it as:
 
 BibTeX:
 
+{% raw %}
 ```bibtex
 @software{samarakkody_symkit_2025,
   author  = {Samarakkody, Miraj},
@@ -197,6 +198,7 @@ BibTeX:
   url     = {https://github.com/mirajcs/SymKit}
 }
 ```
+{% endraw %}
 
 ## References
 
