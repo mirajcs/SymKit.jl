@@ -54,11 +54,12 @@ citations, and references, lives in [`docs/src/index.md`](docs/src/index.md).
 ## Citing SymKit.jl
 
 ```bibtex
-@software{samarakkody_symkit_2025,
+@software{samarakkody_symkit_2026,
   author  = {Samarakkody, Miraj},
   title   = {{SymKit.jl}: A {J}ulia package for symbolic computation},
-  year    = {2025},
+  year    = {2026},
   version = {0.1.0},
+  doi     = {10.5281/zenodo.20237362},
   url     = {https://github.com/mirajcs/SymKit}
 }
 ```

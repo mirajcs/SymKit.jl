@@ -184,17 +184,18 @@ Source: <https://github.com/mirajcs/SymKit>
 
 If you use SymKit.jl in your work, please cite it as:
 
-> Samarakkody, M. (2025). *SymKit.jl: A Julia package for symbolic computation* (Version 0.1.0) [Computer software]. https://github.com/mirajcs/SymKit
+> Samarakkody, M. (2026). *SymKit.jl: A Julia package for symbolic computation* (Version 0.1.0) [Computer software]. https://doi.org/10.5281/zenodo.20237362
 
 BibTeX:
 
 {% raw %}
 ```bibtex
-@software{samarakkody_symkit_2025,
+@software{samarakkody_symkit_2026,
   author  = {Samarakkody, Miraj},
   title   = {{SymKit.jl}: A {J}ulia package for symbolic computation},
   year    = {2026},
   version = {0.1.0},
+  doi     = {10.5281/zenodo.20237362},
   url     = {https://github.com/mirajcs/SymKit}
 }
 ```
