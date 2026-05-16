@@ -201,6 +201,10 @@ BibTeX:
 ```
 {% endraw %}
 
+## Acknowledgement
+
+This work was supported by the HBCU UP Implementation project, Award No. 2510537.
+
 ## References
 
 [^stewart]: Stewart, J. *Calculus: Early Transcendentals*, 8th ed. Cengage Learning, 2015. — Differentiation rules used in [`src/differentiate.jl`](https://github.com/mirajcs/SymKit/blob/main/src/differentiate.jl).

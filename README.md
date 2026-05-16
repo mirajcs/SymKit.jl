@@ -64,6 +64,10 @@ citations, and references, lives in [`docs/src/index.md`](docs/src/index.md).
 }
 ```
 
+## Acknowledgement
+
+This work was supported by the HBCU UP Implementation project, Award No. 2510537.
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
